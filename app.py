@@ -24,12 +24,19 @@ input_data = pd.DataFrame({
 })
 
 # ------------------------------
-# 2️⃣ Quick Rule-Based Prediction
+# 2️⃣ Updated Rule-Based Prediction
 # ------------------------------
 def lounge_eligibility(row):
-    # Rule: Eligible if Loyal Customer OR Business Class
-    if row["Customer Type"] == "Loyal Customer" or row["Class"] == "Business":
+    # Rule 1: Business class → always eligible
+    if row["Class"] == "Business":
         return 1
+    # Rule 2: Loyal customers → always eligible
+    elif row["Customer Type"] == "Loyal Customer":
+        return 1
+    # Rule 3: Disloyal + Eco/Eco Plus → eligible only if flight distance > 2500 km
+    elif row["Customer Type"] == "disloyal Customer" and row["Class"] in ["Eco", "Eco Plus"] and row["Flight Distance"] > 2500:
+        return 1
+    # Otherwise not eligible
     else:
         return 0
 
@@ -50,7 +57,7 @@ st.header("Lounge Eligibility Distribution (Train Dataset)")
 df = pd.read_csv("data/train.csv")
 df.columns = df.columns.str.strip()
 
-# Create LoungeEligible column using same rule
+# Apply updated rule
 df["LoungeEligible"] = df.apply(lounge_eligibility, axis=1)
 
 # Ensure both categories exist
@@ -61,7 +68,7 @@ counts = df["LoungeEligible"].value_counts().sort_index()
 st.write("✅ 1 = Eligible, ❌ 0 = Not Eligible")
 st.bar_chart(counts)
 
-# Optional: Breakdown by Class
+# Breakdown by Class
 st.subheader("Breakdown by Class")
 grouped = df.groupby(["Class", "LoungeEligible"]).size().unstack(fill_value=0)
 st.bar_chart(grouped)
